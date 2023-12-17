@@ -1,3 +1,4 @@
+import uuid
 import numpy as np
 import osmnx as ox
 import json
@@ -20,7 +21,7 @@ ox.settings.useful_tags_node = utn
 ox.settings.useful_tags_way = utw
 
 
-def get_geojson(north: float, south: float, east: float, west: float):
+def get_roads(north: float, south: float, east: float, west: float) -> dict:
     G = ox.graph_from_bbox(
         north=north, south=south, east=east, west=west, network_type="all"
     )
@@ -29,7 +30,7 @@ def get_geojson(north: float, south: float, east: float, west: float):
         Gp, rebuild_graph=True, tolerance=20, dead_ends=False
     )
     file_name = f"{north}-{south}-{east}-{west}.osm"
-    ox.io.save_graph_xml(G, filepath=file_name)
+    ox.io.save_graph_xml(Gc, filepath=file_name)  # type: ignore
     output = subprocess.check_output(
         [
             f'OSM_USE_CUSTOM_INDEXING=NO ogr2ogr -f "GeoJSON" /vsistdout/ {file_name} lines'
@@ -37,12 +38,29 @@ def get_geojson(north: float, south: float, east: float, west: float):
         shell=True,
     )
     d: dict = json.loads(output)
-    print(d)
+    return d
 
 
-def get_distance(lat: float, long: float):
-    pass
+def get_geojson_from_shapefile(prj_file: bytes, shape_file: bytes) -> dict:
+    prj_filepath = f"/tmp/{uuid.uuid4()}.prj"
+    shape_filepath = f"/tmp/{uuid.uuid4()}.shp"
+    with open(prj_filepath, "wb") as p, open(shape_filepath, "wb") as s:
+        p.write(prj_file)
+        s.write(shape_file)
+
+    output = subprocess.check_output(
+        [
+            f'SHAPE_RESTORE_SHX=True ogr2ogr -f "GeoJSON" /vsistdout/ -s_srs {prj_filepath} -t_srs EPSG:4326 {shape_filepath}'
+        ],
+        shell=True,
+    )
+
+    return json.loads(output)
 
 
 if __name__ == "__main__":
-    get_geojson(28.5576, 28.5264, 77.7078, 77.6472)
+    # get_roads(28.5576, 28.5264, 77.7078, 77.6472)
+    with open("Builtup_Kalonda.prj", "rb") as p, open(
+        "Builtup_Kalonda.shp", "rb"
+    ) as s:
+        print(get_geojson_from_shapefile(p.read(), s.read()))
