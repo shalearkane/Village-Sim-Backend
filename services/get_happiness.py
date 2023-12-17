@@ -282,7 +282,7 @@ def get_updated_happiness_on_adding_house(
 
     avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
 
-    return {"happiness": happiness, "avg_happiness": avg_happiness, "initial_data": nearest_distances}
+    return happiness, avg_happiness, nearest_distances
 
 
 # EXAMPLE USAGE
