@@ -2,6 +2,7 @@
 # happiness_factor -> Dynamic
 # Max_dis
 # Call Magic Soumik code for min_dist
+import json
 import numpy as np
 import osmnx as ox
 import networkx as nx
@@ -62,11 +63,11 @@ def dist_euclidean(point1: Point, point2: Point) -> float:
     return distance
 
 
-def calculate_initial_happiness(initial_data):
+def calculate_initial_happiness(initial_data: dict) -> Tuple[dict, float, dict]:
     houses_coord = initial_data["old"]["houses"]
 
     if len(houses_coord) == 0:
-        return 0
+        raise Exception("No house provided")
 
     facilities_coord = initial_data["old"]["facilities"]
 
@@ -289,10 +290,21 @@ if __name__ == "__main__":
 
     max_dist = ox.stats.edge_length_total(Gc)
 
-# EXAMPLE USAGE
-# with open("data/interchange.json", "r") as f:
-#     d = json.load(f)
-#     happiness, avg_happiness, initial_data = calculate_initial_happiness(d)
-#     print(happiness)
-#     print(avg_happiness)
-#     print(initial_data)
+    with open("../data/facilities-mini.json", "r") as f, open("../data/house-mini.json", "r") as h:
+        facilities_coord = json.load(f)
+        houses_coord = json.load(h)
+
+        d = {"old": {"houses": houses_coord, "facilities": facilities_coord}, "new": {}}
+
+        happiness, avg_happiness, d = calculate_initial_happiness(d)
+        print(happiness)
+        print(avg_happiness)
+        print(d)
+
+        d["new"] = {
+            "key": "uuid",
+            "facility_type": "school",
+            "central_point": {"long": 77.67305, "lat": 28.5398},
+        }
+
+        happiness, avg_happiness, d = calculate_updated_happiness_on_adding_facility(d, happiness)
