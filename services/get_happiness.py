@@ -2,13 +2,13 @@
 # happiness_factor -> Dynamic
 # Max_dis
 # Call Magic Soumik code for min_dist
-import json
-import math
 import numpy as np
 import osmnx as ox
 import networkx as nx
 from geopandas import GeoSeries
 from shapely.geometry import Point
+from math import acos, sin, cos, radians
+from typing import List, Tuple
 
 MAX_HAPPINESS = 2
 np.random.seed(0)
@@ -20,10 +20,9 @@ G = ox.graph_from_bbox(
     north=28.65, south=28.45, east=77.8, west=77.6, network_type="all"
 )
 Gp = ox.project_graph(G)
-Gc = ox.consolidate_intersections(
-    Gp, rebuild_graph=True, tolerance=20, dead_ends=False)
+Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=20, dead_ends=False)
 
-Gc.graph["crs"]
+max_dist = ox.stats.edge_length_total(Gc)
 
 facilities = {
     "administrative": [10, 1],
@@ -41,39 +40,51 @@ facilities = {
 
 
 def dist_road(point1: Point, point2: Point) -> float:
+    print("Point1: ", point1)
+    print("Point2: ", point2)
     long_lats = [point1, point2]
-    points = GeoSeries(long_lats, crs="wgs84")
+    points = GeoSeries(data=long_lats, crs="wgs84")
     points_proj = points.to_crs(epsg="32643")
     nodes = []
     for pt in points_proj:
         nodes.append(ox.nearest_nodes(Gc, pt.x, pt.y))
+    print(nodes)
     # route = ox.shortest_path(Gc, nodes[0], nodes[1], weight="length")
     route_length = nx.shortest_path_length(
         G=Gc, source=nodes[0], target=nodes[1], weight="length"
     )
+    print(route_length)
     return route_length
 
 
-def dist_cityblock(point1, point2):
-    Lat1 = point1.x
-    Lat2 = point2.x
-    Lon1 = point1.y
-    Lon2 = point2.y
-    distance = math.acos((math.sin(math.radians(Lat1)) * math.sin(math.radians(Lat2))) + (math.cos(math.radians(
-        Lat1)) * math.cos(math.radians(Lat2))) * (math.cos(math.radians(Lon2) - math.radians(Lon1)))) * 6371000
+def dist_euclidean(point1: Point, point2: Point) -> float:
+    Lon1 = point1.x
+    Lon2 = point2.x
+    Lat1 = point1.y
+    Lat2 = point2.y
+    distance = (
+        acos(
+            (sin(radians(Lat1)) * sin(radians(Lat2)))
+            + (cos(radians(Lat1)) * cos(radians(Lat2)))
+            * (cos(radians(Lon2) - radians(Lon1)))
+        )
+        * 6371000
+    )
     return distance
 
 
 def get_initial_happiness(initial_data):
     houses_coord = initial_data["old"]["houses"]
+
+    if len(houses_coord) == 0:
+        return 0
+
     facilities_coord = initial_data["old"]["facilities"]
 
     happiness = {}
     for facility in facilities.keys():
         happiness[facility] = 0
     avg_happiness = 0
-
-    max_dist = 65  # ye dekhna h kese nikaalna h
 
     for house_uuid in houses_coord.keys():
         nearest_dist = []
@@ -114,7 +125,7 @@ def get_initial_happiness(initial_data):
                             "lat"
                         ],
                     )
-                    new_distance = dist_cityblock(point1, point2)
+                    new_distance = dist_euclidean(point1, point2)
 
                     if new_distance < distance:
                         distance = new_distance
@@ -131,8 +142,7 @@ def get_initial_happiness(initial_data):
                     else:
                         happiness[facility] = MAX_HAPPINESS
                 else:
-                    happiness[facility] += facilities[facility][0] * \
-                        distance / max_dist
+                    happiness[facility] += facilities[facility][0] * distance / max_dist
 
         initial_data["old"]["houses"][house_uuid]["nearest_dist"] = nearest_dist
 
@@ -141,141 +151,138 @@ def get_initial_happiness(initial_data):
 
     avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
 
-    return {"happiness": happiness, "avg_happiness": avg_happiness, "initial_data": initial_data}
+    return happiness, avg_happiness, initial_data
 
 
-def get_updated_happiness(data, happiness):
+def get_updated_happiness_on_adding_facility(
+    data, happiness
+) -> Tuple[dict, float, dict]:
     houses_coord = data["old"]["houses"]
-    facilities_coord = data["old"]["facilities"]
-
     new_building = data["new"]["facility_type"]
     new_building_coord = Point(
         data["new"]["central_point"]["long"], data["new"]["central_point"]["lat"]
     )
 
-    max_dist = 65  # ye dekhna h kese nikaalna h
+    if len(houses_coord) == 0:
+        raise Exception("No House")
+    for house_uuid in houses_coord.keys():
+        curr_house_coordinates = Point(
+            houses_coord[house_uuid]["central_point"]["long"],
+            houses_coord[house_uuid]["central_point"]["lat"],
+        )
 
-    if new_building != "house":
-        for house_uuid in houses_coord.keys():
-            curr_house_coordinates = Point(
-                houses_coord[house_uuid]["central_point"]["long"],
-                houses_coord[house_uuid]["central_point"]["lat"],
-            )
+        if facilities[new_building][1]:
+            new_distance = dist_road(new_building_coord, curr_house_coordinates)
+            old_distance = 0
 
-            if facilities[new_building][1]:
-                new_distance = dist_road(
-                    new_building_coord, curr_house_coordinates)
-                old_distance = 0
+            for i in range(len(houses_coord[house_uuid]["nearest_dist"])):
+                if (
+                    houses_coord[house_uuid]["nearest_dist"][i]["facility_type"]
+                    == new_building
+                ):
+                    old_distance = houses_coord[house_uuid]["nearest_dist"][i]["dist"]
+                    data["old"]["houses"][house_uuid]["nearest_dist"][i][
+                        "dist"
+                    ] = new_distance
+                    break
 
-                for i in range(len(houses_coord[house_uuid]["nearest_dist"])):
-                    if (
-                        houses_coord[house_uuid]["nearest_dist"][i]["facility_type"]
-                        == new_building
-                    ):
-                        old_distance = houses_coord[house_uuid]["nearest_dist"][i][
-                            "dist"
-                        ]
-                        data["old"]["houses"][house_uuid]["nearest_dist"][i][
-                            "dist"
-                        ] = new_distance
-                        break
-
-                if new_distance < old_distance:
-                    if old_distance != float("inf"):
+            if new_distance < old_distance:
+                if old_distance != float("inf"):
+                    if old_distance > 0:
                         happiness[new_building] -= (
                             facilities[new_building][0] / old_distance
                         )
+                    else:
+                        happiness[new_building] -= MAX_HAPPINESS
+                if new_distance > 0:
                     happiness[new_building] += (
                         facilities[new_building][0] / new_distance
                     )
+                else:
+                    happiness[new_building] += MAX_HAPPINESS
 
-            else:
-                new_distance = dist_cityblock(
-                    new_building_coord, curr_house_coordinates
+        else:
+            new_distance = dist_euclidean(new_building_coord, curr_house_coordinates)
+            old_distance = 0
+
+            for i in range(len(houses_coord[house_uuid]["nearest_dist"])):
+                if (
+                    houses_coord[house_uuid]["nearest_dist"][i]["facility_type"]
+                    == new_building
+                ):
+                    old_distance = houses_coord[house_uuid]["nearest_dist"][i]["dist"]
+                    data["old"]["houses"][house_uuid]["nearest_dist"][i][
+                        "dist"
+                    ] = new_distance
+                    break
+
+            if new_distance < old_distance:
+                if old_distance != float("inf"):
+                    happiness[new_building] -= (
+                        facilities[new_building][0] * old_distance / max_dist
+                    )
+                happiness[new_building] += (
+                    facilities[new_building][0] * new_distance / max_dist
                 )
-                old_distance = 0
 
-                for i in range(len(houses_coord[house_uuid]["nearest_dist"])):
-                    if (
-                        houses_coord[house_uuid]["nearest_dist"][i]["facility_type"]
-                        == new_building
-                    ):
-                        old_distance = houses_coord[house_uuid]["nearest_dist"][i][
-                            "dist"
-                        ]
-                        data["old"]["houses"][house_uuid]["nearest_dist"][i][
-                            "dist"
-                        ] = new_distance
-                        break
+    avg_happiness = 0
+    for facility in happiness.keys():
+        avg_happiness += happiness[facility]
 
-                if new_distance < old_distance:
-                    if old_distance != float("inf"):
-                        happiness[new_building] -= (
-                            facilities[new_building][0] *
-                            old_distance / max_dist
-                        )
-                    happiness[new_building] += (
-                        facilities[new_building][0] * new_distance / max_dist
-                    )
+    avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
 
-        avg_happiness = 0
-        for facility in happiness.keys():
-            avg_happiness += happiness[facility]
+    return happiness, avg_happiness, data
 
-        avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
 
-        return {"happiness": happiness, "avg_happiness": avg_happiness, "initial_data": data}
+def get_updated_happiness_on_adding_house(
+    data: dict, happiness: dict
+) -> Tuple[dict, float, List]:
+    houses_coord = data["old"]["houses"]
+    facilities_coord = data["old"]["facilities"]
+    new_building_coord = Point(
+        data["new"]["central_point"]["long"], data["new"]["central_point"]["lat"]
+    )
 
-    elif new_building == "house":
-        nearest_distances = []
-        for facility in facilities_coord.keys():
-            if facilities[facility][1]:
-                distance = float("inf")
-                for facility_uuid in facilities_coord[facility].keys():
-                    curr_facility_coordinates = Point(
-                        facilities_coord[facility][facility_uuid]["central_point"][
-                            "long"
-                        ],
-                        facilities_coord[facility][facility_uuid]["central_point"][
-                            "lat"
-                        ],
-                    )
-                    distance = min(
-                        dist_road(new_building_coord,
-                                  curr_facility_coordinates),
-                        distance,
-                    )
+    nearest_distances = []
+    for facility in facilities_coord.keys():
+        if facilities[facility][1]:
+            distance = float("inf")
+            for facility_uuid in facilities_coord[facility].keys():
+                curr_facility_coordinates = Point(
+                    facilities_coord[facility][facility_uuid]["central_point"]["long"],
+                    facilities_coord[facility][facility_uuid]["central_point"]["lat"],
+                )
+                distance = min(
+                    dist_road(new_building_coord, curr_facility_coordinates),
+                    distance,
+                )
+            if distance > 0:
                 happiness[facility] += facilities[facility][0] / distance
-
             else:
-                distance = float("inf")
-                for facility_uuid in facilities_coord[facility].keys():
-                    curr_facility_coordinates = Point(
-                        facilities_coord[facility][facility_uuid]["central_point"][
-                            "long"
-                        ],
-                        facilities_coord[facility][facility_uuid]["central_point"][
-                            "lat"
-                        ],
-                    )
-                    distance = min(
-                        dist_cityblock(new_building_coord,
-                                       curr_facility_coordinates),
-                        distance,
-                    )
-                happiness[facility] += facilities[facility][0] * \
-                    distance / max_dist
+                happiness[facility] += MAX_HAPPINESS
 
-            nearest_distances.append(
-                {"facility_type": facility, "dist": distance})
+        else:
+            distance = float("inf")
+            for facility_uuid in facilities_coord[facility].keys():
+                curr_facility_coordinates = Point(
+                    facilities_coord[facility][facility_uuid]["central_point"]["long"],
+                    facilities_coord[facility][facility_uuid]["central_point"]["lat"],
+                )
+                distance = min(
+                    dist_euclidean(new_building_coord, curr_facility_coordinates),
+                    distance,
+                )
+            happiness[facility] += facilities[facility][0] * distance / max_dist
 
-        avg_happiness = 0
-        for facility in happiness.keys():
-            avg_happiness += happiness[facility]
+        nearest_distances.append({"facility_type": facility, "dist": distance})
 
-        avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
+    avg_happiness = 0
+    for facility in happiness.keys():
+        avg_happiness += happiness[facility]
 
-        return {"happiness": happiness, "avg_happiness": avg_happiness, "initial_data": nearest_distances}
+    avg_happiness = avg_happiness / (len(happiness) * len(houses_coord))
+
+    return {"happiness": happiness, "avg_happiness": avg_happiness, "initial_data": nearest_distances}
 
 
 # EXAMPLE USAGE
