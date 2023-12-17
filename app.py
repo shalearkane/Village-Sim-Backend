@@ -1,8 +1,9 @@
 import json
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from services.get_buildings_data import get_buildings_data
 from services.get_happiness import get_initial_happiness, get_updated_happiness
+from services.constants import get_constants, update_constants
 
 app = Flask(__name__)
 
@@ -32,3 +33,19 @@ def get_happiness():
 
     except Exception as e:
         return json.dumps({"error": str(e)})
+
+
+@app.route("/constants", methods=["GET"])
+def get_constants():
+    constants_data = get_constants()
+    return jsonify(constants_data)
+
+@app.route("/constants", methods=["POST"])
+def update_constants_route():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid JSON data provided"}), 400
+
+    result = update_constants(data)
+    return jsonify(result)
