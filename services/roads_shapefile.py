@@ -60,7 +60,5 @@ def get_geojson_from_shapefile(prj_file: bytes, shape_file: bytes) -> dict:
 
 if __name__ == "__main__":
     # get_roads(28.5576, 28.5264, 77.7078, 77.6472)
-    with open("Builtup_Kalonda.prj", "rb") as p, open(
-        "Builtup_Kalonda.shp", "rb"
-    ) as s:
+    with open("Builtup_Kalonda.prj", "rb") as p, open("Builtup_Kalonda.shp", "rb") as s:
         print(get_geojson_from_shapefile(p.read(), s.read()))
