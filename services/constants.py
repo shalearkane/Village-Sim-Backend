@@ -21,7 +21,7 @@ def update_constants(data):
         return {"error": str(e)}
 
 
-def get_constants():
+def fetch_constants():
     try:
         with open(CONSTANTS_FILE_PATH, "r") as file:
             constants = json.load(file)

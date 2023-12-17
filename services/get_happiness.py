@@ -12,17 +12,6 @@ from typing import List, Tuple
 
 MAX_HAPPINESS = 2
 np.random.seed(0)
-ox.__version__
-ox.settings.use_cache = True
-ox.settings.log_console = True
-
-G = ox.graph_from_bbox(
-    north=28.65, south=28.45, east=77.8, west=77.6, network_type="all"
-)
-Gp = ox.project_graph(G)
-Gc = ox.consolidate_intersections(Gp, rebuild_graph=True, tolerance=20, dead_ends=False)
-
-max_dist = ox.stats.edge_length_total(Gc)
 
 facilities = {
     "administrative": [10, 1],
@@ -73,7 +62,7 @@ def dist_euclidean(point1: Point, point2: Point) -> float:
     return distance
 
 
-def get_initial_happiness(initial_data):
+def calculate_initial_happiness(initial_data):
     houses_coord = initial_data["old"]["houses"]
 
     if len(houses_coord) == 0:
@@ -154,7 +143,7 @@ def get_initial_happiness(initial_data):
     return happiness, avg_happiness, initial_data
 
 
-def get_updated_happiness_on_adding_facility(
+def calculate_updated_happiness_on_adding_facility(
     data, happiness
 ) -> Tuple[dict, float, dict]:
     houses_coord = data["old"]["houses"]
@@ -234,7 +223,7 @@ def get_updated_happiness_on_adding_facility(
     return happiness, avg_happiness, data
 
 
-def get_updated_happiness_on_adding_house(
+def calculate_updated_happiness_on_adding_house(
     data: dict, happiness: dict
 ) -> Tuple[dict, float, List]:
     houses_coord = data["old"]["houses"]
@@ -285,10 +274,25 @@ def get_updated_happiness_on_adding_house(
     return happiness, avg_happiness, nearest_distances
 
 
+if __name__ == "__main__":
+    ox.__version__
+    ox.settings.use_cache = True
+    ox.settings.log_console = True
+
+    G = ox.graph_from_bbox(
+        north=28.65, south=28.45, east=77.8, west=77.6, network_type="all"
+    )
+    Gp = ox.project_graph(G)
+    Gc = ox.consolidate_intersections(
+        Gp, rebuild_graph=True, tolerance=20, dead_ends=False
+    )
+
+    max_dist = ox.stats.edge_length_total(Gc)
+
 # EXAMPLE USAGE
 # with open("data/interchange.json", "r") as f:
 #     d = json.load(f)
-#     happiness, avg_happiness, initial_data = get_initial_happiness(d)
+#     happiness, avg_happiness, initial_data = calculate_initial_happiness(d)
 #     print(happiness)
 #     print(avg_happiness)
 #     print(initial_data)

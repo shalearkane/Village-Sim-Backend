@@ -1,5 +1,6 @@
 import json
 import uuid
+import copy
 
 conversion = {
     "Electrification": "electric_facility",
@@ -21,18 +22,34 @@ facilities = {
     "school": {},
 }
 
-with open("landmark.json", "r") as f:
-    data: dict = json.load(f)
+
+def fetch_facilities(data: dict) -> dict:
+    f = copy.deepcopy(facilities)
     for d in data:
         key = conversion[d["ast_cat_name"]]
-        if key in facilities.keys():
-            facilities[key][str(uuid.uuid4())] = {
+        if key in f.keys():
+            f[key][str(uuid.uuid4())] = {
                 "central_point": {
                     "long": float(d["longitude"]),
                     "lat": float(d["latitude"]),
                 },
             }
 
+    return f
 
-with open("facilities.json", "w") as f:
-    json.dump(fp=f, obj=facilities)
+
+if __name__ == "__main__":
+    with open("landmark.json", "r") as f:
+        data: dict = json.load(f)
+        for d in data:
+            key = conversion[d["ast_cat_name"]]
+            if key in facilities.keys():
+                facilities[key][str(uuid.uuid4())] = {
+                    "central_point": {
+                        "long": float(d["longitude"]),
+                        "lat": float(d["latitude"]),
+                    },
+                }
+
+    with open("facilities.json", "w") as f:
+        json.dump(fp=f, obj=facilities)

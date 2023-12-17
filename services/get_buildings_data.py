@@ -1,9 +1,9 @@
 import json
 from interfaces import Base, Residential
-from typing import List
+
 
 def get_buildings_data(file_address: str):
-    with open(file_address, 'r') as file:
+    with open(file_address, "r") as file:
         geojson_data = json.load(file)
 
     features_list = []
@@ -25,7 +25,7 @@ def get_buildings_data(file_address: str):
             schoolDistance=0,
             healthDistance=0,
             sewageTreatmentDistance=0,
-            waterBodyDistance=0
+            waterBodyDistance=0,
         )
 
         residential_building = Residential(
@@ -34,7 +34,7 @@ def get_buildings_data(file_address: str):
             floors=properties.get("No_Floors", 1),
             boundaryPoints=coordinates,
             centralPoint=[center_x, center_y],
-            metadata=base_metadata
+            metadata=base_metadata,
         )
 
         features_list.append(residential_building.to_dict())
