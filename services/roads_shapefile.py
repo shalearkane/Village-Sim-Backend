@@ -4,7 +4,7 @@ import json
 import subprocess
 
 
-def fetch_roads(north: float, south: float, east: float, west: float) -> dict:
+def fetch_roads_geojson(north: float, south: float, east: float, west: float) -> dict:
     G = ox.graph_from_bbox(
         north=north, south=south, east=east, west=west, network_type="all"
     )
@@ -36,12 +36,19 @@ def clean_roads_data(data: dict) -> dict:
     return roads
 
 
-def get_geojson_from_shapefile(prj_file: bytes, shape_file: bytes) -> dict:
-    prj_filepath = f"/tmp/{uuid.uuid4()}.prj"
-    shape_filepath = f"/tmp/{uuid.uuid4()}.shp"
-    with open(prj_filepath, "wb") as p, open(shape_filepath, "wb") as s:
+def fetch_geojson_from_shapefile(
+    prj_file: bytes, shape_file: bytes, dbf_file: bytes
+) -> dict:
+    base_path = uuid.uuid4()
+    prj_filepath = f"/tmp/{base_path}.prj"
+    shape_filepath = f"/tmp/{base_path}.shp"
+    dbf_filepath = f"/tmp/{base_path}.dbf"
+    with open(prj_filepath, "wb") as p, open(shape_filepath, "wb") as s, open(
+        dbf_filepath, "wb"
+    ) as d:
         p.write(prj_file)
         s.write(shape_file)
+        d.write(dbf_file)
 
     output = subprocess.check_output(
         [
@@ -53,7 +60,31 @@ def get_geojson_from_shapefile(prj_file: bytes, shape_file: bytes) -> dict:
     return json.loads(output)
 
 
+def clean_house_data(data: dict) -> dict:
+    houses = {}
+    for f in data["features"]:
+        avg_lon = 0
+        avg_lat = 0
+        count = len(f["geometry"]["coordinates"][0])
+
+        for point in f["geometry"]["coordinates"][0]:
+            avg_lon += point[0]
+            avg_lat += point[1]
+
+        avg_lat = avg_lat / count
+        avg_lon = avg_lon / count
+
+        houses[str(uuid.uuid4())] = {
+            "floors": f["properties"]["No_Floors"],
+            "central_point": {"long": avg_lon, "lat": avg_lat},
+        }
+
+    return houses
+
+
 if __name__ == "__main__":
-    fetch_roads(28.5576, 28.5264, 77.7078, 77.6472)
-    # with open("Builtup_Kalonda.prj", "rb") as p, open("Builtup_Kalonda.shp", "rb") as s:
-    #     print(get_geojson_from_shapefile(p.read(), s.read()))
+    # fetch_roads(28.5576, 28.5264, 77.7078, 77.6472)
+    with open("../data/Builtup_Kalonda.prj", "rb") as p, open(
+        "../data/Builtup_Kalonda.shp", "rb"
+    ) as s, open("file.osm", "w") as f:
+        json.dump(fp=f, obj=fetch_geojson_from_shapefile(p.read(), s.read()))

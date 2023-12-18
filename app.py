@@ -10,7 +10,12 @@ from services.get_happiness import (
 from services.constants import fetch_constants, update_constants
 import requests
 
-from services.roads_shapefile import clean_roads_data, fetch_roads
+from services.roads_shapefile import (
+    clean_house_data,
+    clean_roads_data,
+    fetch_geojson_from_shapefile,
+    fetch_roads_geojson,
+)
 
 app = Flask(__name__)
 
@@ -39,10 +44,18 @@ def get_roads():
     east = args.get("", default=77.72, type=float)
     west = args.get("", default=(east - 0.12), type=float)
 
-    roads = fetch_roads(north, south, east, west)
-    cleaned_roads = clean_roads_data(roads)
+    geojson = fetch_roads_geojson(north, south, east, west)
+    return clean_roads_data(geojson)
 
-    return cleaned_roads
+
+@app.route("/houses/shapefile", methods=["POST"])
+def get_houses_from_shapefile():
+    shp = request.files["shp"].read()
+    prj = request.files["prj"].read()
+    dbf = request.files["dbf"].read()
+
+    geojson = fetch_geojson_from_shapefile(prj, shp, dbf)
+    return clean_house_data(geojson)
 
 
 @app.route("/get_initial_happiness", methods=["POST"])
