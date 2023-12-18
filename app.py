@@ -10,6 +10,8 @@ from services.get_happiness import (
 from services.constants import fetch_constants, update_constants
 import requests
 
+from services.roads_shapefile import clean_roads_data, fetch_roads
+
 app = Flask(__name__)
 
 
@@ -27,6 +29,20 @@ def get_facilities():
         f"https://egramswaraj.gov.in/webservice/getGisMapAsset/{gpcode}"
     )
     return fetch_facilities(response.json())
+
+
+@app.route("/roads", methods=["GET"])
+def get_roads():
+    args = request.args
+    north = args.get("", default=28.58, type=float)
+    south = args.get("", default=(north - 0.12), type=float)
+    east = args.get("", default=77.72, type=float)
+    west = args.get("", default=(east - 0.12), type=float)
+
+    roads = fetch_roads(north, south, east, west)
+    cleaned_roads = clean_roads_data(roads)
+
+    return cleaned_roads
 
 
 @app.route("/get_initial_happiness", methods=["POST"])

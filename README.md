@@ -1,15 +1,16 @@
 # API SPEC
+CLEAN ALL API SOURCES BEFORE PUSHING TO PUBLIC GITHUB i.e. egram/grammanchitra
 
 ## Residential
-**Endpoint:** `/residential`  
-**Method:** `GET`  
+**Endpoint:** `/residential`
+**Method:** `GET`
 **Description:** Retrieves residential data from the `Builtup_Kalonda.geojson` GeoJSON file.
 **Parameters:** None
 
 ## Happiness
 ### Initial Happiness
-**Endpoint:** `/get_initial_happiness`  
-**Method:** `POST`  
+**Endpoint:** `/get_initial_happiness`
+**Method:** `POST`
 **Description:** Calculates the initial happiness based on the provided data.
 **Parameters:** JSON like object containing data for the calculation.
 - Example:
@@ -63,8 +64,8 @@
 ```
 
 ### Update Happiness
-**Endpoint:** `/get_updated_happiness`  
-**Method:** `POST`  
+**Endpoint:** `/get_updated_happiness`
+**Method:** `POST`
 **Description:** Calculates the updated happiness based on the provided data and current happiness.
 **Parameters:** JSON like object containing data for the calculation.
 - Example:
@@ -136,14 +137,14 @@
 
 ## Constants
 ### Get constants
-**Endpoint:** `/constants`  
-**Method:** `GET`  
+**Endpoint:** `/constants`
+**Method:** `GET`
 **Description:** Retrieves constants data.
 **Parameters:** None
 
 ### Update constants
-**Endpoint:** `/constants`  
-**Method:** `POST`  
+**Endpoint:** `/constants`
+**Method:** `POST`
 **Description:** Updates constants data.
 **Parameters:** JSON like object like constants.json file.
 - Example:
