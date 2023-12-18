@@ -86,5 +86,7 @@ if __name__ == "__main__":
     # fetch_roads(28.5576, 28.5264, 77.7078, 77.6472)
     with open("../data/Builtup_Kalonda.prj", "rb") as p, open(
         "../data/Builtup_Kalonda.shp", "rb"
-    ) as s, open("file.osm", "w") as f:
-        json.dump(fp=f, obj=fetch_geojson_from_shapefile(p.read(), s.read()))
+    ) as s, open("../data/Builtup_Kalonda.dbf", "rb") as d, open(
+        "Kalonda_houses.geojson", "w"
+    ) as k:
+        json.dump(fp=k, obj=fetch_geojson_from_shapefile(p.read(), s.read(), d.read()))
