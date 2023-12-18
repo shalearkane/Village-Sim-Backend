@@ -167,21 +167,17 @@ def calculate_updated_happiness_on_adding_facility(
 def calculate_updated_happiness_on_adding_house(
     data: dict, happiness: dict
 ) -> Tuple[dict, float, dict]:
-    houses_coord = data["old"]["houses"]
     facilities_coord = data["old"]["facilities"]
-    new_building_coord = Point(
-        data["new"]["central_point"]["long"], data["new"]["central_point"]["lat"]
-    )
+    new_building_coord = data["new"]["central_point"]
 
     nearest_distances = {}
     for facility in facilities_coord.keys():
         if facility_points[facility][1]:
             distance = float("inf")
             for facility_uuid in facilities_coord[facility].keys():
-                curr_facility_coordinates = Point(
-                    facilities_coord[facility][facility_uuid]["central_point"]["long"],
-                    facilities_coord[facility][facility_uuid]["central_point"]["lat"],
-                )
+                curr_facility_coordinates = facilities_coord[facility][facility_uuid][
+                    "central_point"
+                ]
                 distance = min(
                     dist_road(new_building_coord, curr_facility_coordinates),
                     distance,
@@ -194,17 +190,16 @@ def calculate_updated_happiness_on_adding_house(
         else:
             distance = float("inf")
             for facility_uuid in facilities_coord[facility].keys():
-                curr_facility_coordinates = Point(
-                    facilities_coord[facility][facility_uuid]["central_point"]["long"],
-                    facilities_coord[facility][facility_uuid]["central_point"]["lat"],
-                )
+                curr_facility_coordinates = facilities_coord[facility][facility_uuid][
+                    "central_point"
+                ]
                 distance = min(
                     dist_euclidean(new_building_coord, curr_facility_coordinates),
                     distance,
                 )
             happiness[facility] += facility_points[facility][0] * distance / max_dist
 
-        nearest_distances[facility] = {"uuid": "-1", "dist": distance}
+        nearest_distances[facility] = {"id": "-1", "dist": distance}
 
     avg_happiness = 0
     for facility in happiness.keys():

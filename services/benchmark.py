@@ -30,7 +30,7 @@ def func():
     start_series = GeoSeries(data=start_points, crs="wgs84").to_crs(epsg="32643")
     end_series = GeoSeries(data=end_points, crs="wgs84").to_crs(epsg="32643")
 
-    start_nodes = ox.nearest_nodes(Gc, [pt.x for pt in end_series], [pt.y for pt in start_series])
+    start_nodes = ox.nearest_nodes(Gc, [pt.x for pt in start_series], [pt.y for pt in start_series])
     end_nodes = ox.nearest_nodes(Gc, [pt.x for pt in end_series], [pt.y for pt in end_series])
     print(start_nodes)
     print(end_nodes)
