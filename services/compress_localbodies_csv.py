@@ -6,7 +6,7 @@ df = pd.read_csv(csv_file_path, low_memory=False)
 print(df.columns)
 
 # Select only the necessary columns
-selected_columns = ["stateCode", "stateNameEnglish", "localBodyCode", "localBodyNameEnglish", "localBodyTypeName", "localBodyTypeCode"]
+selected_columns = ["stateCode", "stateNameEnglish", "localBodyCode", "localBodyNameEnglish", "localBodyTypeName", "localBodyTypeCode", "coverage_entityName"]
 df_selected = df[selected_columns]
 
 # Save the selected columns to a new CSV file with compression

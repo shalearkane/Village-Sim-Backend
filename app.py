@@ -152,7 +152,7 @@ def get_panchayats(statecode):
 
     filtered_df = df[df["stateCode"] == state_code]
 
-    panchayats_list = filtered_df["localBodyNameEnglish"].tolist()
+    panchayats_list = filtered_df["coverage_entityName"].tolist()
 
     return jsonify({"panchayats": panchayats_list})
 
