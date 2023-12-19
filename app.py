@@ -18,6 +18,7 @@ from services.roads_shapefile import (
     fetch_roads_geojson,
 )
 import osmnx as ox
+from os.path import exists
 
 app = Flask(__name__)
 CORS(app)
@@ -93,17 +94,19 @@ def get_happiness():
     east = args.get("east", default=77.8, type=float)
     west = args.get("west", default=77.6, type=float)
 
-    G = ox.graph_from_bbox(
-        north=north, south=south, east=east, west=west, network_type="all"
-    )
-    Gp = ox.project_graph(G)
-    Gc = ox.consolidate_intersections(
-        Gp, rebuild_graph=True, tolerance=20, dead_ends=False
-    )
+    if exists(f"{cache_key}.gml"):
+        Gc = ox.io.load_graphml(f"{cache_key}.gml")
+    else:
+        G = ox.graph_from_bbox(
+            north=north, south=south, east=east, west=west, network_type="all"
+        )
+        Gp = ox.project_graph(G)
+        Gc = ox.consolidate_intersections(
+            Gp, rebuild_graph=True, tolerance=20, dead_ends=False
+        )
 
-    ox.io.save_graphml(Gc, f"{cache_key}.gml")
-    # else:
-    Gc = ox.io.load_graphml(f"{cache_key}.gml")
+        ox.io.save_graphml(Gc, f"{cache_key}.gml")
+        Gc = ox.io.load_graphml(f"{cache_key}.gml")
 
     body: dict = request.json
     body = get_nodes_of_facilities(Gc, body)
