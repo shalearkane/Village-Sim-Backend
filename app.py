@@ -143,5 +143,22 @@ def get_local_bodies():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/get_panchayats/<statecode>", methods=["GET"])
+def get_panchayats(statecode):
+    compressed_csv_file_path = "data/selected_localbodies.csv.gz"
+    df = pd.read_csv(compressed_csv_file_path)
+    # try:
+    state_code = int(statecode)
+
+    filtered_df = df[df["stateCode"] == state_code]
+
+    panchayats_list = filtered_df["localBodyNameEnglish"].tolist()
+
+    return jsonify({"panchayats": panchayats_list})
+
+    # except Exception as e:
+    #     return jsonify({"error": str(e)}), 400
+
+
 if __name__ == "__main__":
     app.run(debug=True)
