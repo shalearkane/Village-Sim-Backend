@@ -58,6 +58,27 @@ def get_houses_from_shapefile():
     return clean_house_data(geojson)
 
 
+@app.route("/interchange", methods=["POST"])
+def get_facilities_houses():
+    # houses
+    shp = request.files["shp"].read()
+    prj = request.files["prj"].read()
+    dbf = request.files["dbf"].read()
+
+    geojson = fetch_geojson_from_shapefile(prj, shp, dbf)
+    houses = clean_house_data(geojson)
+
+    # facilities
+    args = request.args
+    gpcode = args.get("gpcode", default=63317, type=int)
+    response = requests.get(
+        f"https://egramswaraj.gov.in/webservice/getGisMapAsset/{gpcode}"
+    )
+    facilities = fetch_facilities(response.json())
+
+    return {"old": {"houses": houses, "facilities": facilities}, "new": {}}
+
+
 @app.route("/get_initial_happiness", methods=["POST"])
 def get_initial_happiness():
     try:
