@@ -149,17 +149,20 @@ def get_local_bodies():
 def get_panchayats(statecode):
     compressed_csv_file_path = "data/selected_localbodies.csv.gz"
     df = pd.read_csv(compressed_csv_file_path)
-    # try:
-    state_code = int(statecode)
+    try:
+        state_code = int(statecode)
 
-    filtered_df = df[df["stateCode"] == state_code]
+        filtered_df = df[df["stateCode"] == state_code]
 
-    panchayats_list = filtered_df["coverage_entityName"].tolist()
+        panchayats_data = filtered_df[["coverage_entityName", "localBodyCode"]]
 
-    return jsonify({"panchayats": panchayats_list})
+        # Convert the result to a dictionary
+        panchayats_dict = panchayats_data.to_dict(orient="records")
 
-    # except Exception as e:
-    #     return jsonify({"error": str(e)}), 400
+        return jsonify({"panchayats": panchayats_dict})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 if __name__ == "__main__":
