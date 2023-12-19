@@ -1,6 +1,7 @@
 import json
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from services.facilities import fetch_facilities
 from services.get_buildings_data import get_buildings_data
 from services.get_happiness import (
@@ -18,6 +19,7 @@ from services.roads_shapefile import (
 )
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route("/residential/kalonda")
