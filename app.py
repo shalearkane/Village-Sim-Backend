@@ -5,10 +5,9 @@ from flask_cors import CORS
 from services.facilities import fetch_facilities
 from services.get_buildings_data import get_buildings_data
 from services.get_happiness import (
-    calculate_initial_happiness,
-    calculate_updated_happiness_on_adding_facility,
+    calculate_happiness,
+    get_nodes_of_facilities,
 )
-from services.constants import fetch_constants, update_constants
 import requests
 import pandas as pd
 
@@ -18,9 +17,12 @@ from services.roads_shapefile import (
     fetch_geojson_from_shapefile,
     fetch_roads_geojson,
 )
+import osmnx as ox
 
 app = Flask(__name__)
 CORS(app)
+
+ox.settings.use_cache = True
 
 
 @app.route("/residential/kalonda")
@@ -82,45 +84,32 @@ def get_facilities_houses():
     return {"old": {"houses": houses, "facilities": facilities}, "new": {}}
 
 
-@app.route("/get_initial_happiness", methods=["POST"])
-def get_initial_happiness():
-    try:
-        request_data = request.get_json()
-        result = calculate_initial_happiness(request_data)
-        return json.dumps(result)
+@app.route("/happiness", methods=["POST"])
+def get_happiness():
+    args = request.args
+    cache_key = args.get("cache", default="NOCACHE", type=str)
+    north = args.get("north", default=28.65, type=float)
+    south = args.get("south", default=28.45, type=float)
+    east = args.get("east", default=77.8, type=float)
+    west = args.get("west", default=77.6, type=float)
 
-    except Exception as e:
-        return json.dumps({"error": str(e)})
+    G = ox.graph_from_bbox(
+        north=north, south=south, east=east, west=west, network_type="all"
+    )
+    Gp = ox.project_graph(G)
+    Gc = ox.consolidate_intersections(
+        Gp, rebuild_graph=True, tolerance=20, dead_ends=False
+    )
 
+    ox.io.save_graphml(Gc, f"{cache_key}.gml")
+    # else:
+    Gc = ox.io.load_graphml(f"{cache_key}.gml")
 
-@app.route("/get_updated_happiness", methods=["POST"])
-def get_updated_happiness_on_adding_house():
-    try:
-        request_data = request.get_json()
-        data = request_data["data"]
-        happiness = request_data["happiness"]
-        result = calculate_updated_happiness_on_adding_facility(data, happiness)
-        return json.dumps(result)
+    body: dict = request.json
+    body = get_nodes_of_facilities(Gc, body)
+    happiness, avg_happiness, data = calculate_happiness(Gc, body)
 
-    except Exception as e:
-        return json.dumps({"error": str(e)})
-
-
-@app.route("/constants", methods=["GET"])
-def get_constants():
-    constants_data = fetch_constants()
-    return jsonify(constants_data)
-
-
-@app.route("/constants", methods=["POST"])
-def update_constants_route():
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "Invalid JSON data provided"}), 400
-
-    result = update_constants(data)
-    return jsonify(result)
+    return {"happiness": happiness, "avg_happiness": avg_happiness, "data": data}
 
 
 @app.route("/get_local_bodies", methods=["GET"])
@@ -135,7 +124,9 @@ def get_local_bodies():
         if state_code:
             filtered_df = filtered_df[filtered_df["stateCode"] == int(state_code)]
         if local_body_type_code:
-            filtered_df = filtered_df[filtered_df["localBodyTypeCode"] == int(local_body_type_code)]
+            filtered_df = filtered_df[
+                filtered_df["localBodyTypeCode"] == int(local_body_type_code)
+            ]
 
         result = filtered_df.to_dict(orient="records")
 

@@ -10,7 +10,7 @@ def fetch_roads_geojson(north: float, south: float, east: float, west: float) ->
     )
     Gp = ox.project_graph(G)
     Gc = ox.consolidate_intersections(
-        Gp, rebuild_graph=True, tolerance=20, dead_ends=False, reconnect_edges=True
+        Gp, rebuild_graph=True, tolerance=20, dead_ends=True, reconnect_edges=True
     )
     file_name = f"{north}-{south}-{east}-{west}.gpkg"
     ox.io.save_graph_geopackage(Gc, filepath=file_name)
