@@ -9,6 +9,7 @@ from services.get_happiness import (
 )
 from services.constants import fetch_constants, update_constants
 import requests
+import pandas as pd
 
 from services.roads_shapefile import (
     clean_house_data,
@@ -118,6 +119,28 @@ def update_constants_route():
 
     result = update_constants(data)
     return jsonify(result)
+
+
+@app.route("/get_local_bodies", methods=["GET"])
+def get_local_bodies():
+    compressed_csv_file_path = "data/selected_localbodies.csv.gz"
+    df = pd.read_csv(compressed_csv_file_path)
+    try:
+        state_code = request.args.get("stateCode")
+        local_body_type_code = request.args.get("localBodyTypeCode")
+
+        filtered_df = df
+        if state_code:
+            filtered_df = filtered_df[filtered_df["stateCode"] == int(state_code)]
+        if local_body_type_code:
+            filtered_df = filtered_df[filtered_df["localBodyTypeCode"] == int(local_body_type_code)]
+
+        result = filtered_df.to_dict(orient="records")
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
