@@ -47,10 +47,10 @@ def get_facilities():
 @app.route("/roads", methods=["GET"])
 def get_roads():
     args = request.args
-    north = args.get("north", default=28.58, type=float)
-    south = args.get("south", default=(north - 0.12), type=float)
-    east = args.get("east", default=77.72, type=float)
-    west = args.get("west", default=(east + 0.12), type=float)
+    north = args.get("north", default=28.65, type=float)
+    south = args.get("south", default=28.45, type=float)
+    east = args.get("east", default=77.8, type=float)
+    west = args.get("west", default=77.6, type=float)
 
     geojson = fetch_roads_geojson(north, south, east, west)
     return clean_roads_data(geojson)
