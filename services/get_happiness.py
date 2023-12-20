@@ -6,22 +6,22 @@ from pyproj import Transformer
 from sklearn.cluster import AgglomerativeClustering
 from typing import Tuple
 
-MAX_HAPPINESS = 1
+MAX_HAPPINESS = 2
 DISTANCE_THRESHOLD = 70
-MAX_DISTANCE_TO_B = 500
+MAX_DISTANCE_TO_B = 1000
 
 facility_points = {
-    "administrative": [10, 1],
-    "road": [10, 1],
-    "school": [15, 1],
-    "healthcare": [12, 1],
+    "administrative": [11, 1],
+    "road": [12, 1],
+    "school": [13, 1],
+    "healthcare": [15, 1],
     "haat_shop_csc": [13, 1],
-    "water_facility": [13, 1],
-    "electric_facility": [15, 1],
+    "water_facility": [14, 1],
+    "electric_facility": [14, 1],
     "solar_plant": [13, 0],
     "biogas": [12, 0],
     "windmill": [13, 0],
-    "sanitation": [10, 0],
+    "sanitation": [17, 0],
 }
 
 
@@ -131,7 +131,7 @@ def calculate_happiness(Gc, initial_data: dict) -> Tuple[dict, float, dict]:
                         happiness[facility_key] = MAX_HAPPINESS
                 else:
                     happiness[facility_key] = (
-                        facility_points[facility_key][0] * distance / MAX_DISTANCE_TO_B
+                        facility_points[facility_key][0] * (distance / MAX_DISTANCE_TO_B)
                     )
 
         for house_uuid in cluster.keys():
