@@ -96,7 +96,7 @@ def get_happiness():
     east = args.get("east", default=77.8, type=float)
     west = args.get("west", default=77.6, type=float)
 
-    if exists(f"{cache_key}.gml"):
+    if cache_key != "NOCACHE" and exists(f"{cache_key}.gml"):
         Gc = ox.io.load_graphml(f"{cache_key}.gml")
     else:
         G = ox.graph_from_bbox(
