@@ -179,8 +179,8 @@ def optimize_facility_coordinates(houses, facilities, facility_points):
                     lat = 28.5200000
                     lon = 77.7000000  # max threshold
                 x, y = transformer.transform(lat, lon)
-                individual[facility][facility_uuid]["central_point"]["x"] = lon
-                individual[facility][facility_uuid]["central_point"]["y"] = lat
+                individual[facility][facility_uuid]["central_point"]["x"] = x
+                individual[facility][facility_uuid]["central_point"]["y"] = y
 
         population.append(individual)
 
