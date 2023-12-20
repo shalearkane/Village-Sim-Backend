@@ -100,7 +100,13 @@ def get_happiness():
         Gc = ox.io.load_graphml(f"{cache_key}.gml")
     else:
         G = ox.graph_from_bbox(
-            north=north, south=south, east=east, west=west, network_type="all"
+            north=north,
+            south=south,
+            east=east,
+            west=west,
+            network_type="all",
+            simplify=True,
+            truncate_by_edge=True,
         )
         Gp = ox.project_graph(G)
         Gc = ox.consolidate_intersections(
@@ -162,4 +168,4 @@ def get_panchayats(statecode):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
