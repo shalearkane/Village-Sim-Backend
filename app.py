@@ -106,6 +106,7 @@ def get_happiness():
             west=west,
             network_type="all",
             truncate_by_edge=True,
+            simplify=True
         )
         Gp = ox.project_graph(G)
         Gc = ox.consolidate_intersections(
