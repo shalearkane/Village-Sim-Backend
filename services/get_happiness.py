@@ -7,7 +7,7 @@ from sklearn.cluster import AgglomerativeClustering
 from typing import Tuple
 
 MAX_HAPPINESS = 1
-DISTANCE_THRESHOLD = 50
+DISTANCE_THRESHOLD = 70
 MAX_DISTANCE_TO_B = 500
 
 facility_points = {
@@ -37,6 +37,8 @@ def cluster_houses(houses_coord):
         ]
     )
 
+    houses_coord_keys = list(houses_coord.keys())
+
     db = AgglomerativeClustering(
         n_clusters=None,
         metric="manhattan",
@@ -44,13 +46,11 @@ def cluster_houses(houses_coord):
         distance_threshold=DISTANCE_THRESHOLD,
     ).fit(coords)
 
-    labels = db.labels_
-    clusters = {}
+    labels = db.labels_.tolist()
+    clusters = {k: [] for k in labels}
 
     for i, label in enumerate(labels):
-        if label not in clusters:
-            clusters[label] = []
-        clusters[label].append(list(houses_coord.keys())[i])  # Append house UUID
+        clusters[label].append(houses_coord_keys[i])  # Append house UUID
 
     result_clusters = [
         {uuid: houses_coord[uuid] for uuid in cluster} for cluster in clusters.values()
@@ -100,17 +100,17 @@ def calculate_happiness(Gc, initial_data: dict) -> Tuple[dict, float, dict]:
 
         nearest_dist = {}
 
-        for facility in facilities.keys():
+        for facility_key, facility in facilities.items():
             distance = float("inf")
             uuid = ""
-            for facility_uuid in facilities[facility].keys():
+            for facility_uuid in facility.keys():
                 point1 = cluster_centroid["central_point"]
-                point2 = facilities[facility][facility_uuid]["central_point"]
-                facility_node = facilities[facility][facility_uuid]["node"]
+                point2 = facility[facility_uuid]["central_point"]
+                facility_node = facility[facility_uuid]["node"]
 
-                if facility_points[facility][1]:
+                if facility_points[facility_key][1]:
                     new_distance = (
-                        cluster_dist + facilities[facility][facility_uuid]["dist"]
+                        cluster_dist + facility[facility_uuid]["dist"]
                     ) + nx.shortest_path_length(
                         G=Gc, source=cluster_node, target=facility_node, weight="length"
                     )
@@ -121,24 +121,24 @@ def calculate_happiness(Gc, initial_data: dict) -> Tuple[dict, float, dict]:
                     distance = new_distance
                     uuid = facility_uuid
 
-            nearest_dist[facility] = {"id": uuid, "dist": distance}
+            nearest_dist[facility_key] = {"id": uuid, "dist": distance}
 
             if distance != float("inf"):
-                if facility_points[facility][1]:
+                if facility_points[facility_key][1]:
                     if distance > 0:
-                        happiness[facility] = facility_points[facility][0] / distance
+                        happiness[facility_key] = facility_points[facility_key][0] / distance
                     else:
-                        happiness[facility] = MAX_HAPPINESS
+                        happiness[facility_key] = MAX_HAPPINESS
                 else:
-                    happiness[facility] = (
-                        facility_points[facility][0] * distance / MAX_DISTANCE_TO_B
+                    happiness[facility_key] = (
+                        facility_points[facility_key][0] * distance / MAX_DISTANCE_TO_B
                     )
 
         for house_uuid in cluster.keys():
             initial_data["old"]["houses"][house_uuid]["nearest_dist"] = nearest_dist
 
-    for facility in happiness.keys():
-        avg_happiness += happiness[facility]
+    for facility_key in happiness.keys():
+        avg_happiness += happiness[facility_key]
 
     avg_happiness = avg_happiness / (len(happiness) * len(houses))
 
