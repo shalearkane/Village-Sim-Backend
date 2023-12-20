@@ -29,7 +29,7 @@ def dist_euclidean(point1: dict, point2: dict) -> float:
     return ox.distance.euclidean(point1["x"], point1["y"], point2["x"], point2["y"])
 
 
-def cluster_houses(houses_coord):
+def cluster_houses(houses_coord: dict):
     coords = np.array(
         [
             (data["central_point"]["x"], data["central_point"]["y"])
