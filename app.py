@@ -105,7 +105,6 @@ def get_happiness():
             east=east,
             west=west,
             network_type="all",
-            simplify=True,
             truncate_by_edge=True,
         )
         Gp = ox.project_graph(G)
